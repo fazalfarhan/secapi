@@ -3,7 +3,7 @@ name = "secapi"
 version = "0.1.0"
 description = "Open-source security scanning API platform"
 authors = [
-    {name = "Sultan", email = "contact@secapi.dev"}
+    {name = "Fazal", email = "contact@secapi.dev"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"

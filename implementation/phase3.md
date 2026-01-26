@@ -280,7 +280,7 @@ docker-compose up -d
 
 ## License
 
-MIT © Sultan
+MIT © Fazal
 ```
 
 **Deliverables:**

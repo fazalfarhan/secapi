@@ -2,7 +2,7 @@
 
 ## About Me
 
-I'm Sultan, a DevSecOps Engineer with 3 years of experience. I'm building open-source APIs to showcase my expertise and grow my GitHub portfolio using a "learn in public" approach.
+I'm Fazal, a DevSecOps Engineer with 3 years of experience. I'm building open-source APIs to showcase my expertise and grow my GitHub portfolio using a "learn in public" approach.
 
 ## Current Project
 
