@@ -4,7 +4,11 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+    wget \
+    && rm -rf /var/lib/apt/lists/* \
+    && wget -qO /tmp/trivy.rpm https://github.com/aquasecurity/trivy/releases/download/v0.55.0/trivy_0.55.0_Linux-ARM64.deb \
+    && dpkg -i /tmp/trivy.rpm \
+    && rm /tmp/trivy.rpm
 
 # Install Python dependencies
 COPY requirements.txt requirements-dev.txt ./

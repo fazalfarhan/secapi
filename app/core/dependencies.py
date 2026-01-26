@@ -9,7 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_api_key, verify_api_key
+from app.core.security import verify_api_key
 from app.db.session import get_db
 from app.db.models import User
 
@@ -23,20 +23,15 @@ async def get_current_user(
     """Get authenticated user from API key."""
     api_key = credentials.credentials
 
-    # Find user by API key hash
-    result = await db.execute(select(User).where(User.api_key_hash == hash_api_key(api_key)))
-    user = result.scalar_one_or_none()
+    # Get all users and verify API key (since we can't query by hash directly)
+    result = await db.execute(select(User))
+    users = result.scalars().all()
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key",
-        )
+    for user in users:
+        if verify_api_key(api_key, user.api_key_hash):
+            return user
 
-    if not verify_api_key(api_key, user.api_key_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key",
-        )
-
-    return user
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid API key",
+    )

@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, String, Text, Uuid
+from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -40,7 +40,9 @@ class Scan(Base, TimestampMixin):
     __tablename__ = "scans"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    user_id: Mapped[UUID] = mapped_column(Uuid, nullable=False, index=True)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     scan_type: Mapped[Literal["trivy", "checkov", "trufflehog"]] = mapped_column(
         String(50), nullable=False
     )
@@ -63,7 +65,9 @@ class ApiUsage(Base, TimestampMixin):
     __tablename__ = "api_usage"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    user_id: Mapped[UUID] = mapped_column(Uuid, nullable=False, index=True)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     endpoint: Mapped[str] = mapped_column(String(255), nullable=False)
     method: Mapped[str] = mapped_column(String(10), nullable=False)
     status_code: Mapped[int] = mapped_column(nullable=False)
@@ -79,7 +83,9 @@ class RateLimit(Base):
     __tablename__ = "rate_limits"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    user_id: Mapped[UUID] = mapped_column(Uuid, unique=True, nullable=False, index=True)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
+    )
     scans_count: Mapped[int] = mapped_column(default=0, nullable=False)
     period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_reset: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
