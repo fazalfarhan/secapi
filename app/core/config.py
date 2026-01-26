@@ -1,5 +1,7 @@
 """Application configuration using Pydantic Settings."""
 
+from __future__ import annotations
+
 from typing import Literal
 
 from pydantic import Field

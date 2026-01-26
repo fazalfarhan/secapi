@@ -1,5 +1,7 @@
 """FastAPI dependencies."""
 
+from __future__ import annotations
+
 from typing import AsyncGenerator
 
 from fastapi import Depends, HTTPException, status

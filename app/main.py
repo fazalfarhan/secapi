@@ -1,5 +1,7 @@
 """FastAPI application factory."""
 
+from __future__ import annotations
+
 from fastapi import FastAPI
 
 from app.api.v1.router import api_router
@@ -32,7 +34,7 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     async def health() -> dict[str, str]:
-        return {"status": "healthy"}
+        return {"status": "healthy", "database": "not_connected", "redis": "not_connected"}
 
     return app
 

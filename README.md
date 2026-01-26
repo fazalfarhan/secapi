@@ -2,53 +2,107 @@
 
 Open-source security scanning API platform that wraps Trivy, Checkov, and TruffleHog into a unified REST API.
 
-## Features
-
-- 🚀 **Unified API** - Single interface for multiple security scanners
-- 🔒 **API Key Authentication** - Secure API key-based auth
-- 📊 **Async Processing** - Fast async/await patterns
-- 🐳 **Docker Ready** - Self-hosted with Docker Compose
-- 📈 **Rate Limiting** - Built-in rate limiting per tier
-- 🔄 **Queue System** - Celery for background jobs
-
 ## Quick Start
 
-### Docker Compose (Recommended)
+### Option 1: Use the run script (Easiest)
 
 ```bash
-cp .env.example .env
+./run.sh
+```
+
+This will:
+- Create a virtual environment if needed
+- Install dependencies
+- Start the server at http://localhost:8000
+
+### Option 2: Docker Compose (Full Stack with Database)
+
+```bash
 docker-compose up -d
 ```
 
-### Local Development
+Includes PostgreSQL, Redis, and the API.
+
+### Option 3: Manual Setup
 
 ```bash
-# Setup
-python -m venv venv
+# Create virtual environment
+python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt -r requirements-dev.txt
 
-# Database
-alembic upgrade head
+# Install dependencies
+pip install -r requirements.txt
 
-# Run
+# Run server
 uvicorn app.main:app --reload
+```
+
+## Running Locally
+
+**Fastest way (no install needed for basic testing):**
+```bash
+./run.sh
+```
+
+**With Docker (includes database):**
+```bash
+docker-compose up -d
 ```
 
 ## API Endpoints
 
-- `GET /` - API info
-- `GET /health` - Health check
-- `GET /docs` - Interactive API docs
+Once running:
+- `GET http://localhost:8000/` - API info
+- `GET http://localhost:8000/health` - Health check
+- `GET http://localhost:8000/docs` - Interactive API docs (Swagger UI)
+- `GET http://localhost:8000/redoc` - ReDoc documentation
+
+## Quick Test
+
+```bash
+curl http://localhost:8000/
+curl http://localhost:8000/health
+```
+
+## Project Structure
+
+```
+secapi/
+├── app/
+│   ├── api/v1/          # API endpoints
+│   ├── core/            # Config, security, logging
+│   ├── db/              # SQLAlchemy models
+│   ├── schemas/         # Pydantic schemas
+│   └── main.py          # FastAPI app factory
+├── tests/               # Test suite
+├── alembic/             # Database migrations
+├── docker-compose.yml   # Dev infrastructure
+└── run.sh              # Quick start script
+```
+
+
 
 ## Tech Stack
 
 - **Backend**: Python 3.11+, FastAPI
-- **Database**: PostgreSQL with SQLAlchemy
-- **Cache/Queue**: Redis, Celery
-- **Security**: Trivy, Checkov, TruffleHog
+- **Database**: PostgreSQL with SQLAlchemy (async)
+- **Cache/Queue**: Redis
+- **Security Scanners**: Trivy, Checkov, TruffleHog (coming in Phase 2)
+- **Testing**: pytest
+- **Code Quality**: black, ruff, mypy
 - **Deployment**: Docker, Docker Compose
+
+## Current Status
+
+**Phase 1 Complete**: Foundation & Core Infrastructure
+- Project structure
+- FastAPI application
+- Database models
+- Docker setup
+- API key authentication
+
+**Next**: Trivy scanner integration (Phase 1-1)
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License

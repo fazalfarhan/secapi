@@ -1,10 +1,12 @@
 """Database models."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Literal
 from uuid import UUID, uuid4
 
-from sqlalchemy import String, Text, Uuid
+from sqlalchemy import DateTime, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
