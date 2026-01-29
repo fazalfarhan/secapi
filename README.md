@@ -1,108 +1,90 @@
 # SecAPI
 
-Open-source security scanning API platform that wraps Trivy, Checkov, and TruffleHog into a unified REST API.
+Open-source security scanning API platform. Self-hostable alternative to commercial security platforms.
+
+## What It Does
+
+- **Unified REST API** for Trivy, Checkov, TruffleHog security scans
+- **Async scanning** via Celery workers - submit and poll for results
+- **Multi-user support** with API keys for team collaboration
 
 ## Quick Start
 
-### Option 1: Use the run script (Easiest)
-
 ```bash
-./run.sh
-```
-
-This will:
-- Create a virtual environment if needed
-- Install dependencies
-- Start the server at http://localhost:8000
-
-### Option 2: Docker Compose (Full Stack with Database)
-
-```bash
+# 1. Clone and start
+git clone https://github.com/yourusername/secapi.git
+cd secapi
 docker-compose up -d
+
+# 2. Register (save the API key - shown only once)
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com"}'
+
+# 3. Submit a scan
+curl -X POST http://localhost:8000/api/v1/scan/docker \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{"image": "nginx:latest"}'
+
+# 4. Check results
+curl http://localhost:8000/api/v1/scans/{scan_id} \
+  -H "X-API-Key: YOUR_API_KEY"
 ```
 
-Includes PostgreSQL, Redis, and the API.
-
-### Option 3: Manual Setup
-
-```bash
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run server
-uvicorn app.main:app --reload
-```
-
-## Running Locally
-
-**Fastest way (no install needed for basic testing):**
-```bash
-./run.sh
-```
-
-**With Docker (includes database):**
-```bash
-docker-compose up -d
-```
+Services:
+- API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+- Flower (Celery monitor): http://localhost:5555
 
 ## API Endpoints
 
-Once running:
-- `GET http://localhost:8000/` - API info
-- `GET http://localhost:8000/health` - Health check
-- `GET http://localhost:8000/docs` - Interactive API docs (Swagger UI)
-- `GET http://localhost:8000/redoc` - ReDoc documentation
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/register` | Register user, get API key |
+| POST | `/api/v1/scan/docker` | Submit Docker image scan |
+| GET | `/api/v1/scans` | List your scans (paginated) |
+| GET | `/api/v1/scans/{scan_id}` | Get scan status/results |
+| DELETE | `/api/v1/scans/{scan_id}` | Delete scan record |
+| GET | `/health` | Health check |
 
-## Quick Test
+Scan statuses: `pending` → `running` → `completed` or `failed`
 
-```bash
-curl http://localhost:8000/
-curl http://localhost:8000/health
+## Multi-User Benefits
+
+- **API key per user** - Track who initiated which scan
+- **Scan isolation** - Each user sees only their own scans
+- **Tier-based rate limiting** - Fair resource allocation (free/pro/enterprise)
+- **Audit trail** - Complete history for compliance
+
+Instead of each developer running Trivy locally with inconsistent configs, SecAPI provides centralized, standardized scanning for the entire team.
+
+## Configuration
+
+Essential environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | Redis for caching |
+| `CELERY_BROKER_URL` | Celery message broker |
+| `SECRET_KEY` | JWT signing secret (required) |
+| `ENVIRONMENT` | `development` or `production` |
+| `RATE_LIMIT_ENABLED` | Enable rate limiting (default: true) |
+
+## CI/CD Example
+
+```yaml
+# GitHub Actions
+- name: Security Scan
+  run: |
+    SCAN_ID=$(curl -X POST $SECAPI_URL/api/v1/scan/docker \
+      -H "X-API-Key: $SECAPI_KEY" \
+      -d '{"image": "myapp:${{ github.sha }}"}' | jq -r '.scan_id')
+    sleep 30
+    curl $SECAPI_URL/api/v1/scans/$SCAN_ID -H "X-API-Key: $SECAPI_KEY" | jq '.results'
 ```
-
-## Project Structure
-
-```
-secapi/
-├── app/
-│   ├── api/v1/          # API endpoints
-│   ├── core/            # Config, security, logging
-│   ├── db/              # SQLAlchemy models
-│   ├── schemas/         # Pydantic schemas
-│   └── main.py          # FastAPI app factory
-├── tests/               # Test suite
-├── alembic/             # Database migrations
-├── docker-compose.yml   # Dev infrastructure
-└── run.sh              # Quick start script
-```
-
-
-
-## Tech Stack
-
-- **Backend**: Python 3.11+, FastAPI
-- **Database**: PostgreSQL with SQLAlchemy (async)
-- **Cache/Queue**: Redis
-- **Security Scanners**: Trivy, Checkov, TruffleHog (coming in Phase 2)
-- **Testing**: pytest
-- **Code Quality**: black, ruff, mypy
-- **Deployment**: Docker, Docker Compose
-
-## Current Status
-
-**Phase 1 Complete**: Foundation & Core Infrastructure
-- Project structure
-- FastAPI application
-- Database models
-- Docker setup
-- API key authentication
-
-**Next**: Trivy scanner integration (Phase 1-1)
 
 ## License
 
-MIT License
+MIT
