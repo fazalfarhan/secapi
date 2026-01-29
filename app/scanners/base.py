@@ -15,7 +15,7 @@ class BaseScanner(ABC):
     scanner_version: str | None = None
 
     @abstractmethod
-    async def scan(self, input_data: dict[str, Any]) -> dict[str, Any]:
+    def scan(self, input_data: dict[str, Any]) -> dict[str, Any]:
         """Execute scan and return normalized results.
 
         Args:
@@ -57,21 +57,21 @@ class BaseScanner(ABC):
         Returns:
             Normalized severity: CRITICAL, HIGH, MEDIUM, LOW, or INFO
         """
-        severity_map = {
-            "CRITICAL": "CRITICAL",
-            "CRITICAL": "CRITICAL",
-            "HIGH": "HIGH",
-            "HIGH": "HIGH",
-            "MEDIUM": "MEDIUM",
-            "MEDIUM": "MEDIUM",
-            "MODERATE": "MEDIUM",
-            "LOW": "LOW",
-            "LOW": "LOW",
-            "INFO": "INFO",
-            "INFO": "INFO",
-            "UNKNOWN": "INFO",
-        }
-        return severity_map.get(severity.upper(), "INFO")
+        if not severity:
+            return "INFO"
+
+        severity_upper = severity.upper()
+
+        # Direct mappings
+        if severity_upper in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"):
+            return severity_upper
+
+        # Alternative names
+        if severity_upper == "MODERATE":
+            return "MEDIUM"
+
+        # Default unknown severities to INFO
+        return "INFO"
 
     @staticmethod
     def create_scan_result(
@@ -97,8 +97,9 @@ class BaseScanner(ABC):
 
         for finding in findings:
             severity = finding.get("severity", "INFO").upper()
-            if severity in summary:
-                summary[severity] += 1
+            severity_lower = severity.lower()
+            if severity_lower in summary:
+                summary[severity_lower] += 1
 
         result: dict[str, Any] = {
             "scan_type": scan_type,

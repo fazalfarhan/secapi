@@ -59,7 +59,7 @@ class TrivyScanner(BaseScanner):
         self.timeout_seconds = timeout_seconds
         self._detected_version: str | None = None
 
-    async def scan(self, input_data: dict[str, Any]) -> dict[str, Any]:
+    def scan(self, input_data: dict[str, Any]) -> dict[str, Any]:
         """Execute Trivy scan on Docker image.
 
         Args:
@@ -94,7 +94,7 @@ class TrivyScanner(BaseScanner):
         start_time = time.time()
 
         try:
-            raw_output = await self._execute_trivy(image, severity, scanners)
+            raw_output = self._execute_trivy(image, severity, scanners)
             scan_duration = time.time() - start_time
 
             parsed = self._parse_trivy_output(raw_output)
@@ -193,7 +193,7 @@ class TrivyScanner(BaseScanner):
 
         return True
 
-    async def _execute_trivy(
+    def _execute_trivy(
         self,
         image: str,
         severity: list[str],
@@ -234,17 +234,13 @@ class TrivyScanner(BaseScanner):
 
         logger.debug("Executing Trivy command", command=" ".join(shlex.quote(c) for c in cmd))
 
-        # Run subprocess in thread pool to avoid blocking the event loop
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None,
-            lambda: subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout_seconds,
-                check=False,
-            ),
+        # Run subprocess (synchronous - Celery already handles async)
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=self.timeout_seconds,
+            check=False,
         )
 
         if result.returncode != 0:

@@ -4,7 +4,7 @@ Open-source security scanning API platform. Self-hostable alternative to commerc
 
 ## What It Does
 
-- **Unified REST API** for Trivy, Checkov, TruffleHog security scans
+- **Unified REST API** for Trivy security scans
 - **Async scanning** via Celery workers - submit and poll for results
 - **Multi-user support** with API keys for team collaboration
 

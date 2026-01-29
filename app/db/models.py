@@ -43,7 +43,7 @@ class Scan(Base, TimestampMixin):
     user_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    scan_type: Mapped[Literal["trivy", "checkov", "trufflehog"]] = mapped_column(
+    scan_type: Mapped[Literal["trivy"]] = mapped_column(
         String(50), nullable=False
     )
     status: Mapped[Literal["pending", "running", "completed", "failed"]] = mapped_column(
