@@ -79,16 +79,20 @@ async def submit_docker_scan(
     )
 
 
-@router.get("/scans/{scan_id}", response_model=ScanStatusResponse)
+@router.get("/scans/{scan_id}")
 async def get_scan_status(
     scan_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> ScanStatusResponse:
+    format: str = Query("json", description="Response format: 'json' or 'table'"),
+    limit: int = Query(1000, ge=1, le=10000, description="Max vulnerabilities to show in table format"),
+) -> Response:
     """Get scan status and results.
 
     Returns the current status of a scan. If the scan is complete,
     includes the full results.
+
+    Use ?format=table for plain text table output, or ?format=json (default) for JSON.
     """
     result = await db.execute(
         select(Scan).where(
@@ -112,16 +116,118 @@ async def get_scan_status(
         except json.JSONDecodeError:
             logger.error("Failed to parse scan results", scan_id=str(scan_id))
 
-    return ScanStatusResponse(
-        scan_id=scan.id,
-        status=scan.status,
-        scan_type=scan.scan_type,
-        created_at=scan.created_at,
-        started_at=scan.started_at,
-        completed_at=scan.completed_at,
-        error_message=scan.error_message,
-        results=results_data,
-    )
+    # Table format
+    if format == "table":
+        return Response(
+            content=_format_scan_as_table(scan, results_data, limit),
+            media_type="text/plain",
+        )
+
+    # JSON format (default)
+    response_data = {
+        "scan_id": str(scan.id),
+        "status": scan.status,
+        "scan_type": scan.scan_type,
+        "created_at": scan.created_at.isoformat() if scan.created_at else None,
+        "started_at": scan.started_at.isoformat() if scan.started_at else None,
+        "completed_at": scan.completed_at.isoformat() if scan.completed_at else None,
+        "error_message": scan.error_message,
+        "results": results_data,
+    }
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content=response_data)
+
+
+def _format_scan_as_table(scan: Scan, results_data: dict | None, limit: int = 1000) -> str:
+    """Format scan results as a plain text table."""
+    lines = []
+
+    # Header
+    lines.append("╔═══════════════════════════════════════════════════════════════════════════════╗")
+    lines.append("║                              SECAPI SCAN RESULTS                               ║")
+    lines.append("╚═══════════════════════════════════════════════════════════════════════════════╝")
+    lines.append("")
+
+    # Scan metadata
+    lines.append(f"Scan ID:     {scan.id}")
+    lines.append(f"Status:      {scan.status.upper()}")
+    lines.append(f"Scanner:     {scan.scan_type}")
+    lines.append(f"Created:     {scan.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') if scan.created_at else 'N/A'}")
+
+    if scan.started_at:
+        duration = (scan.completed_at or datetime.now(UTC)) - scan.started_at
+        lines.append(f"Duration:    {duration.total_seconds():.2f}s")
+
+    if scan.error_message:
+        lines.append(f"Error:       {scan.error_message}")
+    lines.append("")
+
+    # Parse input data to show image
+    if scan.input_data:
+        try:
+            input_data = json.loads(scan.input_data) if isinstance(scan.input_data, str) else scan.input_data
+            if isinstance(input_data, dict) and "image" in input_data:
+                lines.append(f"Target:      {input_data['image']}")
+                lines.append("")
+        except json.JSONDecodeError:
+            pass
+
+    # Results table
+    if scan.status == "completed" and results_data:
+        findings = results_data.get("findings", [])
+        summary = results_data.get("summary", {})
+
+        # Summary
+        lines.append("─" * 80)
+        lines.append("SUMMARY")
+        lines.append("─" * 80)
+        lines.append(f"  Critical:  {summary.get('critical', 0)}")
+        lines.append(f"  High:      {summary.get('high', 0)}")
+        lines.append(f"  Medium:    {summary.get('medium', 0)}")
+        lines.append(f"  Low:       {summary.get('low', 0)}")
+        lines.append("")
+
+        if findings:
+            # Findings table header
+            lines.append("─" * 80)
+            lines.append("VULNERABILITIES")
+            lines.append("─" * 80)
+
+            # Table header
+            header = f" {'SEVERITY':<10} │ {'VULN ID':<20} │ {'PACKAGE':<20} │ {'FIXED VERSION'}"
+            lines.append(header)
+            lines.append("─" * 80)
+
+            # Table rows
+            for finding in findings[:limit]:
+                vuln_id = finding.get("id", "")[:20]
+                package = f"{finding.get('package_name', '')} {finding.get('package_version', '')}"[:20]
+                fixed = finding.get("fixed_version", "N/A")[:20]
+                severity = finding.get("severity", "UNKNOWN")[:10]
+
+                lines.append(f" {severity:<10} │ {vuln_id:<20} │ {package:<20} │ {fixed}")
+
+            if len(findings) > limit:
+                lines.append(f"... and {len(findings) - limit} more vulnerabilities (use ?limit=N to show more)")
+
+        elif findings is not None and len(findings) == 0:
+            lines.append("─" * 80)
+            lines.append("No vulnerabilities found!")
+            lines.append("─" * 80)
+    elif scan.status == "running":
+        lines.append("─" * 80)
+        lines.append("Scan is in progress... Check back later.")
+        lines.append("─" * 80)
+    elif scan.status == "pending":
+        lines.append("─" * 80)
+        lines.append("Scan is queued... Check back later.")
+        lines.append("─" * 80)
+    elif scan.status == "failed":
+        lines.append("─" * 80)
+        lines.append(f"Scan failed: {scan.error_message or 'Unknown error'}")
+        lines.append("─" * 80)
+
+    return "\n".join(lines)
 
 
 @router.get("/scans", response_model=ScanListResponse)

@@ -482,8 +482,37 @@ docker-compose up -d</pre>
                             </button>
                         </div>
                         <pre id="code3">curl -X POST http://localhost:8000/api/v1/scan/docker \
-  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{"image": "nginx:latest"}'</pre>
+                    </div>
+                    <div class="code-card">
+                        <div class="code-header">
+                            <span>4. Get results (JSON)</span>
+                            <button class="copy-btn" onclick="copyCode(this, 'code4')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                        <pre id="code4">curl "http://localhost:8000/api/v1/scans/{scan_id}?format=json" \
+  -H "Authorization: Bearer $API_KEY" | jq .</pre>
+                    </div>
+                    <div class="code-card">
+                        <div class="code-header">
+                            <span>5. Get results (Table)</span>
+                            <button class="copy-btn" onclick="copyCode(this, 'code5')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                        <pre id="code5">curl "http://localhost:8000/api/v1/scans/{scan_id}?format=table" \
+  -H "Authorization: Bearer $API_KEY"</pre>
                     </div>
                 </div>
             </div>
