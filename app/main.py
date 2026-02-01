@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 from app.api.v1.router import api_router
 from app.core.config import settings
@@ -24,13 +25,13 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router, prefix=settings.API_V1_STR)
 
-    @app.get("/")
-    async def root() -> dict[str, str]:
-        return {
-            "name": settings.PROJECT_NAME,
-            "version": settings.VERSION,
-            "docs": "/docs",
-        }
+    @app.get("/", response_class=HTMLResponse)
+    async def root() -> HTMLResponse:
+        """Render landing page."""
+        from pathlib import Path
+
+        html_path = Path(__file__).parent / "templates" / "index.html"
+        return HTMLResponse(content=html_path.read_text())
 
     @app.get("/health")
     async def health() -> dict[str, str]:
