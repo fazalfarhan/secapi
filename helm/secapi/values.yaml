@@ -1,0 +1,351 @@
+# Default values for secapi Helm chart
+# This is a YAML-formatted file
+
+# Global settings applied to all resources
+global:
+  # Common environment variables for all secapi pods
+  env: []
+  # Override image registry for all images
+  imageRegistry: ""
+  # Common labels for all resources
+  labels: {}
+  # Common annotations for all resources
+  annotations: {}
+
+# -- Replicas for the API deployment
+replicaCount: 1
+
+image:
+  # Container image repository
+  # For local development: use local Kind/Minikube registry or "secapi" after: docker build -t secapi .
+  repository: secapi
+  # Image pull policy (Always, IfNotPresent, Never)
+  pullPolicy: IfNotPresent
+  # Image tag (defaults to Chart.appVersion if not specified)
+  tag: "latest"
+
+# Image pull secrets for private registries
+imagePullSecrets: []
+
+# -- Override the Kubernetes version (useful for capabilities checks)
+kubeVersion: ""
+
+# Name override for resources (defaults to Chart name)
+nameOverride: ""
+
+# Fullname override for resources (defaults to release-name-chart-name)
+fullnameOverride: ""
+
+# Pod annotations for API deployment
+podAnnotations: {}
+
+# Pod security context for API deployment
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# Service configuration for API
+service:
+  type: ClusterIP
+  port: 8000
+  # Additional annotations (e.g., for cloud load balancers)
+  annotations: {}
+
+# Resource limits and requests for API
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector for pod placement
+nodeSelector: {}
+
+# Tolerations for pod placement
+tolerations: []
+
+# Affinity rules for pod placement
+affinity: {}
+
+# -- Application environment (development, staging, production)
+environment: production
+
+# -- Application configuration
+app:
+  # API version prefix
+  apiV1Str: /api/v1
+  # CORS allowed origins (JSON array format)
+  allowedOrigins: '["http://localhost:8000","http://localhost:3000"]'
+  # API key prefix for authentication
+  apiKeyPrefix: sec
+  # Rate limiting
+  rateLimitEnabled: true
+  rateLimitRequests: 100
+  rateLimitPeriodSeconds: 3600
+
+# -- PostgreSQL configuration
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  # Database credentials (required if postgres.enabled=true)
+  postgresUser: secapi
+  postgresPassword: ""  # Set via --set or use existing secret
+  postgresDatabase: secapi
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 5432
+  # Persistent volume for data
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""  # Uses default storage class
+    accessMode: ReadWriteOnce
+  # Resource limits
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  # Liveness probe configuration
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 5
+  # Readiness probe configuration
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# -- Redis configuration
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 6379
+  # Persistent volume for data
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+  # Resource limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # Liveness probe configuration
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 5
+  # Readiness probe configuration
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# -- Celery Worker configuration
+celeryWorker:
+  enabled: true
+  # Number of worker replicas
+  replicaCount: 1
+  # Concurrency level per worker (default: CPU count)
+  concurrency: ""
+  # Resource limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # Pod annotations
+  podAnnotations: {}
+  # Security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+  # Node selector, tolerations, affinity
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# -- Flower (Celery monitoring) configuration
+flower:
+  enabled: true
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 5555
+  # Resource limits
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  # Basic auth for Flower (optional)
+  basicAuth:
+    enabled: false
+    username: ""
+    password: ""
+  # Pod annotations
+  podAnnotations: {}
+  # Security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+  # Node selector, tolerations, affinity
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# -- Ingress configuration
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: secapi.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: secapi-tls
+      hosts:
+        - secapi.example.com
+  # Additional ingress rules (e.g., for Flower)
+  extraRules: []
+
+# -- External PostgreSQL configuration (if postgres.enabled=false)
+externalPostgres:
+  # Existing secret to use (must contain keys: postgres-user, postgres-password, postgres-database, postgres-host, postgres-port)
+  existingSecret: ""
+  # Or set connection string directly
+  connectionString: ""
+
+# -- External Redis configuration (if redis.enabled=false)
+externalRedis:
+  # Existing secret to use (must contain keys: redis-host, redis-port, redis-password)
+  existingSecret: ""
+  # Or set connection details
+  host: ""
+  port: 6379
+  password: ""
+
+# -- Existing Kubernetes Secret for application secrets
+# When set, Helm will NOT create a Secret and will use this one instead
+# The secret must contain these keys:
+#   - secret-key: Application secret key
+#   - database-url: PostgreSQL connection string
+#   - redis-url: Redis connection string
+#   - celery-broker-url: Celery broker URL
+#   - celery-result-backend: Celery result backend URL
+#
+# Example secret creation:
+#   kubectl create secret generic secapi-secrets \
+#     --from-literal=secret-key='your-secret-key-min-32-chars' \
+#     --from-literal=database-url='postgresql+asyncpg://user:pass@host:5432/db' \
+#     --from-literal=redis-url='redis://host:6379/0' \
+#     --from-literal=celery-broker-url='redis://host:6379/1' \
+#     --from-literal=celery-result-backend='redis://host:6379/2'
+existingSecret: ""
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Health check endpoints
+healthCheck:
+  # Path for liveness/readiness probes
+  path: /health
+  # Initial delay for API probes
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Volume for scan cache (shared between API and worker)
+scanCache:
+  persistence:
+    enabled: false
+    size: 20Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+
+# Volume for scan targets (worker input/output)
+scanTargets:
+  persistence:
+    enabled: false
+    size: 50Gi
+    storageClass: ""
+    accessMode: ReadWriteMany

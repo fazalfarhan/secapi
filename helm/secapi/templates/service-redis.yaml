@@ -1,0 +1,18 @@
+{{- if .Values.redis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "secapi.fullname" . }}-redis
+  labels:
+    {{- include "secapi.redis.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.redis.service.type }}
+  ports:
+    - port: {{ .Values.redis.service.port }}
+      targetPort: redis
+      protocol: TCP
+      name: redis
+  selector:
+    {{- include "secapi.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+{{- end }}

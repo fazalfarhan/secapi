@@ -1,0 +1,72 @@
+Thank you for installing SecAPI!
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get all {{ .Release.Name }}
+
+SECURITY NOTES:
+================
+
+1. IMPORTANT: Change the default SECRET_KEY in production:
+   $ kubectl create secret generic {{ include "secapi.fullname" . }}-custom-secret \
+     --from-literal=secret-key=$(openssl rand -hex 32)
+
+   Then upgrade with:
+   $ helm upgrade {{ .Release.Name }} . --set existingSecret={{ include "secapi.fullname" . }}-custom-secret
+
+2. Configure PostgreSQL password:
+   $ helm upgrade {{ .Release.Name }} . --set postgres.postgresPassword=YOUR_PASSWORD
+
+3. Enable ingress with TLS for production use.
+
+ACCESSING THE APPLICATION:
+==========================
+
+{{- if .Values.ingress.enabled }}
+
+API URL: https://{{ (index .Values.ingress.hosts 0).host }}
+{{- else }}
+
+API is not exposed via Ingress. Forward the port locally:
+
+  $ kubectl port-forward svc/{{ include "secapi.fullname" . }}-api 8000:8000
+
+Then access at: http://localhost:8000
+{{- end }}
+
+Health check:
+  $ kubectl exec -it deployment/{{ include "secapi.fullname" . }}-api -- curl http://localhost:8000/health
+
+MONITORING:
+===========
+
+{{- if .Values.flower.enabled }}
+
+Flower (Celery monitor):
+{{- if .Values.ingress.enabled }}
+  Configure ingress for Flower service or use port-forward:
+{{- end }}
+  $ kubectl port-forward svc/{{ include "secapi.fullname" . }}-flower 5555:5555
+  Then open: http://localhost:5555
+{{- end }}
+
+DATABASE:
+=========
+
+PostgreSQL service: {{ include "secapi.fullname" . }}-postgres:5432
+
+Connect to database:
+  $ kubectl exec -it deployment/{{ include "secapi.fullname" . }}-postgres -- psql -U {{ .Values.postgres.postgresUser }} -d {{ .Values.postgres.postgresDatabase }}
+
+REDIS:
+======
+
+Redis service: {{ include "secapi.fullname" . }}-redis:6379
+
+Connect to Redis:
+  $ kubectl exec -it deployment/{{ include "secapi.fullname" . }}-redis -- redis-cli
+
+For more information, visit: https://github.com/fazalfarhan/secapi

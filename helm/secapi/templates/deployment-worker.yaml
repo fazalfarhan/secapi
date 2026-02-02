@@ -1,0 +1,111 @@
+{{- if .Values.celeryWorker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "secapi.fullname" . }}-worker
+  labels:
+    {{- include "secapi.worker.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.celeryWorker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "secapi.worker.labels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.celeryWorker.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "secapi.worker.labels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      {{- include "secapi.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "secapi.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.celeryWorker.podSecurityContext | nindent 8 }}
+      containers:
+        - name: worker
+          securityContext:
+            {{- toYaml .Values.celeryWorker.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - celery
+            - -A
+            - app.core.celery
+            - worker
+            - --loglevel=info
+            {{- if .Values.celeryWorker.concurrency }}
+            - --concurrency={{ .Values.celeryWorker.concurrency }}
+            {{- end }}
+          env:
+            - name: ENVIRONMENT
+              value: {{ .Values.environment | quote }}
+            {{- if .Values.existingSecret }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: database-url
+            - name: CELERY_BROKER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: celery-broker-url
+            - name: CELERY_RESULT_BACKEND
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: celery-result-backend
+            {{- else }}
+            - name: DATABASE_URL
+              value: {{ include "secapi.databaseUrl" . }}
+            - name: CELERY_BROKER_URL
+              value: {{ include "secapi.celeryBrokerUrl" . }}
+            - name: CELERY_RESULT_BACKEND
+              value: {{ include "secapi.celeryResultBackend" . }}
+            {{- end }}
+            {{- with .Values.global.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.celeryWorker.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.scanCache.persistence.enabled }}
+            - name: scan-cache
+              mountPath: /root/.cache/trivy
+            {{- end }}
+            {{- if .Values.scanTargets.persistence.enabled }}
+            - name: scan-targets
+              mountPath: /scan
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.scanCache.persistence.enabled }}
+        - name: scan-cache
+          persistentVolumeClaim:
+            claimName: {{ include "secapi.fullname" . }}-scan-cache
+        {{- end }}
+        {{- if .Values.scanTargets.persistence.enabled }}
+        - name: scan-targets
+          persistentVolumeClaim:
+            claimName: {{ include "secapi.fullname" . }}-scan-targets
+        {{- end }}
+      {{- with .Values.celeryWorker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.celeryWorker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.celeryWorker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

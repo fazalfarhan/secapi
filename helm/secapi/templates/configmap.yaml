@@ -1,0 +1,16 @@
+{{- if not .Values.existingSecret }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "secapi.fullname" . }}-config
+  labels:
+    {{- include "secapi.labels" . | nindent 4 }}
+data:
+  ENVIRONMENT: {{ .Values.environment | quote }}
+  API_V1_STR: {{ .Values.app.apiV1Str | quote }}
+  ALLOWED_ORIGINS: {{ .Values.app.allowedOrigins | quote }}
+  API_KEY_PREFIX: {{ .Values.app.apiKeyPrefix | quote }}
+  RATE_LIMIT_ENABLED: {{ .Values.app.rateLimitEnabled | quote }}
+  RATE_LIMIT_REQUESTS: {{ .Values.app.rateLimitRequests | quote }}
+  RATE_LIMIT_PERIOD_SECONDS: {{ .Values.app.rateLimitPeriodSeconds | quote }}
+{{- end }}

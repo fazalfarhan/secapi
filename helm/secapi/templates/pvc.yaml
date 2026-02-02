@@ -1,0 +1,76 @@
+{{- if .Values.postgres.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "secapi.fullname" . }}-postgres
+  labels:
+    {{- include "secapi.postgres.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.postgres.persistence.accessMode }}
+  {{- if .Values.postgres.persistence.storageClass }}
+  storageClassName: {{ .Values.postgres.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.postgres.persistence.size }}
+{{- end }}
+
+---
+{{- if .Values.redis.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "secapi.fullname" . }}-redis
+  labels:
+    {{- include "secapi.redis.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.redis.persistence.accessMode }}
+  {{- if .Values.redis.persistence.storageClass }}
+  storageClassName: {{ .Values.redis.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.redis.persistence.size }}
+{{- end }}
+
+---
+{{- if .Values.scanCache.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "secapi.fullname" . }}-scan-cache
+  labels:
+    {{- include "secapi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scan-cache
+spec:
+  accessModes:
+    - {{ .Values.scanCache.persistence.accessMode }}
+  {{- if .Values.scanCache.persistence.storageClass }}
+  storageClassName: {{ .Values.scanCache.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.scanCache.persistence.size }}
+{{- end }}
+
+---
+{{- if .Values.scanTargets.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "secapi.fullname" . }}-scan-targets
+  labels:
+    {{- include "secapi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scan-targets
+spec:
+  accessModes:
+    - {{ .Values.scanCache.persistence.accessMode }}
+  {{- if .Values.scanTargets.persistence.storageClass }}
+  storageClassName: {{ .Values.scanTargets.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.scanTargets.persistence.size }}
+{{- end }}
