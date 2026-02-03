@@ -63,6 +63,7 @@ Open-source security scanning API platform. Self-hostable alternative to commerc
 # 1. Clone and start
 git clone https://github.com/fazalfarhan/secapi.git
 cd secapi
+cp .env.dev .env
 docker-compose up -d
 
 # 2. Register (save the API key - shown only once)
@@ -95,6 +96,8 @@ Services:
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/v1/auth/register` | Register user, get API key |
+| POST | `/api/v1/auth/reset-request` | Request API key reset |
+| POST | `/api/v1/auth/reset-confirm` | Confirm reset with token, get new key |
 | POST | `/api/v1/scan/docker` | Submit Docker image scan |
 | GET | `/api/v1/scans` | List your scans (paginated) |
 | GET | `/api/v1/scans/{scan_id}` | Get scan status/results |
@@ -103,6 +106,32 @@ Services:
 | GET | `/health` | Health check |
 
 Scan statuses: `pending` → `running` → `completed` or `failed`
+
+## API Key Reset
+
+Lost your API key? Reset it securely:
+
+```bash
+# 1. Request reset
+curl -X POST http://localhost:8000/api/v1/auth/reset-request \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com"}'
+
+# 2. Get token (development: check logs, production: check email)
+# Development: docker-compose logs api | grep reset_token
+# Production: check your email inbox
+
+# 3. Confirm reset
+curl -X POST http://localhost:8000/api/v1/auth/reset-confirm \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com", "token": "<token_from_logs_or_email>"}'
+
+# Response: {"api_key": "secapi_new_key", "message": "API key regenerated"}
+```
+
+- **Development mode**: Token logged to console
+- **Production mode**: Token sent via email
+- Tokens expire in 15 minutes and are one-time use only
 
 ## Supported Scanners
 
@@ -135,6 +164,25 @@ Essential environment variables:
 | `SECRET_KEY` | JWT signing secret (required) |
 | `ENVIRONMENT` | `development` or `production` |
 | `RATE_LIMIT_ENABLED` | Enable rate limiting (default: true) |
+
+## Kubernetes Deployment
+
+```bash
+# 1. Build image
+docker build -t secapi:latest .
+
+# 2. Load into cluster (Colima/Kind)
+docker save secapi:latest | colima load -
+
+# 3. Install Helm chart
+helm install secapi ./helm/secapi \
+  --set postgres.postgresPassword=changeme
+
+# 4. Port forward
+kubectl port-forward svc/secapi-api 8000:8000 -n secapi
+```
+
+See [helm/secapi/README.md](helm/secapi/README.md) for full documentation including production setup with external databases and SMTP.
 
 ## CI/CD Example
 

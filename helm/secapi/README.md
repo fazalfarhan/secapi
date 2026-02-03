@@ -19,9 +19,10 @@ docker save secapi:latest | colima load -
 
 ```bash
 helm install secapi ./helm/secapi \
-  --set postgres.postgresPassword=changeme \
-  --namespace secapi --create-namespace
+  --set postgres.postgresPassword=changeme
 ```
+
+Resources are deployed to the `secapi` namespace by default.
 
 ### 3. Access
 
@@ -35,9 +36,24 @@ kubectl port-forward svc/secapi-flower 5555:5555 -n secapi
 # Open http://localhost:5555
 ```
 
-## Using External Database (Optional)
+## Modes
 
-For production with managed databases (AWS RDS, Cloud SQL, etc.):
+| Mode | `production` | API Key Reset | Use Case |
+|------|---------------|---------------|----------|
+| Development | `false` | Console logging | Local testing |
+| Production | `true` | Email via SMTP | Production deployment |
+
+```bash
+# Development (default)
+helm install secapi ./helm/secapi --set production=false
+
+# Production (with SMTP required)
+helm install secapi ./helm/secapi --set production=true
+```
+
+## Production Setup
+
+For production with managed databases (AWS RDS, Cloud SQL, etc.) and SMTP:
 
 ```bash
 kubectl create secret generic secapi-secrets \
@@ -45,16 +61,41 @@ kubectl create secret generic secapi-secrets \
   --from-literal=database-url='postgresql+asyncpg://user:pass@external-db:5432/secapi' \
   --from-literal=redis-url='redis://external-redis:6379/0' \
   --from-literal=celery-broker-url='redis://external-redis:6379/1' \
-  --from-literal=celery-result-backend='redis://external-redis:6379/2'
+  --from-literal=celery-result-backend='redis://external-redis:6379/2' \
+  --from-literal=smtp-host='smtp.gmail.com' \
+  --from-literal=smtp-port='587' \
+  --from-literal=smtp-user='your-email@gmail.com' \
+  --from-literal=smtp-password='your-app-password' \
+  --from-literal=smtp-from='noreply@secapi.com' \
+  --from-literal=smtp-use-tls='true'
 
 helm install secapi ./helm/secapi \
   --set postgres.enabled=false \
   --set redis.enabled=false \
-  --set existingSecret=secapi-secrets \
-  --namespace secapi --create-namespace
+  --set production=true \
+  --set existingSecret=secapi-secrets
 ```
 
-**For local development**, skip this - the chart includes PostgreSQL and Redis.
+## Testing Email Locally
+
+Use [Mailhog](https://github.com/mailhog/MailHog) to test email without sending real emails:
+
+```bash
+# Install Mailhog
+brew install mailhog
+mailhog
+
+# Or with Docker
+docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
+
+# Configure Helm to use Mailhog
+helm upgrade secapi ./helm/secapi \
+  --set smtp.host='host.docker.internal' \
+  --set smtp.port='1025' \
+  --set production=true
+```
+
+Check emails at http://localhost:8025
 
 ## Commands
 

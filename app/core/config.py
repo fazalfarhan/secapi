@@ -49,5 +49,17 @@ class Settings(BaseSettings):
     API_KEY_LENGTH: int = 32
     API_KEY_PREFIX: str = "secapi_"
 
+    # API Key Reset
+    RESET_TOKEN_EXPIRY_MINUTES: int = 15
+    RESET_METHOD: Literal["console", "email"] = "console"
+
+    # SMTP Configuration (for production email sending)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "noreply@secapi.io"
+    SMTP_USE_TLS: bool = True
+
 
 settings = Settings()

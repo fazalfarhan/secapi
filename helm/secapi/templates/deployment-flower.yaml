@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "secapi.fullname" . }}-flower
+  namespace: {{ include "secapi.namespace" . }}
   labels:
     {{- include "secapi.flower.labels" . | nindent 4 }}
 spec:

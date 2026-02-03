@@ -3,10 +3,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "secapi.fullname" . }}-config
+  namespace: {{ include "secapi.namespace" . }}
   labels:
     {{- include "secapi.labels" . | nindent 4 }}
 data:
-  ENVIRONMENT: {{ .Values.environment | quote }}
+  ENVIRONMENT: {{ ternary "production" "development" .Values.production | quote }}
   API_V1_STR: {{ .Values.app.apiV1Str | quote }}
   ALLOWED_ORIGINS: {{ .Values.app.allowedOrigins | quote }}
   API_KEY_PREFIX: {{ .Values.app.apiKeyPrefix | quote }}

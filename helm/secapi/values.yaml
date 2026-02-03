@@ -12,6 +12,17 @@ global:
   # Common annotations for all resources
   annotations: {}
 
+# -- Namespace configuration
+namespace:
+  # Create the namespace
+  create: true
+  # Namespace name (defaults to release namespace or "secapi")
+  name: "secapi"
+  # Additional labels for the namespace
+  labels: {}
+  # Additional annotations for the namespace
+  annotations: {}
+
 # -- Replicas for the API deployment
 replicaCount: 1
 
@@ -87,8 +98,22 @@ tolerations: []
 # Affinity rules for pod placement
 affinity: {}
 
-# -- Application environment (development, staging, production)
-environment: production
+# -- Production mode
+# When true: uses email for API key resets, stricter defaults
+# When false: uses console logging for reset tokens, dev-friendly defaults
+production: true
+
+# -- API Key Reset settings (auto-set by production mode, can override)
+resetTokenExpiryMinutes: 15
+
+# -- SMTP settings (required in production mode for email resets)
+smtp:
+  host: smtp.gmail.com
+  port: 587
+  user: ""
+  password: ""
+  from: noreply@secapi.example.com
+  useTls: "true"
 
 # -- Application configuration
 app:
@@ -197,11 +222,11 @@ celeryWorker:
   # Resource limits
   resources:
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 1000m
+      memory: 1Gi
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
   # Pod annotations
   podAnnotations: {}
   # Security context
@@ -336,6 +361,8 @@ healthCheck:
 
 # Volume for scan cache (shared between API and worker)
 scanCache:
+  # emptyDir size limit for Trivy cache (tmpfs in memory)
+  emptyDirSizeLimit: 256Mi
   persistence:
     enabled: false
     size: 20Gi
