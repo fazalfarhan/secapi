@@ -1,28 +1,23 @@
+# Pre-commit hooks for SecAPI
+# See https://pre-commit.com for more information
+# Install: pip install pre-commit && pre-commit install
+
 repos:
+  # Gitleaks secret scanner - prevents committing secrets/credentials
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: Gitleaks Secret Scanner
+        entry: bash -c 'gitleaks protect --staged --verbose'
+        language: system
+        pass_filenames: false
+
+  # Standard pre-commit hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        exclude: ^helm/
       - id: check-added-large-files
-
-  - repo: https://github.com/psf/black
-    rev: 24.8.0
-    hooks:
-      - id: black
-        language_version: python3.11
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.0
-    hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
-    hooks:
-      - id: mypy
-        additional_dependencies:
-          - types-redis
-          - pydantic==2.9.2

@@ -1,0 +1,21 @@
+# Gitleaks configuration for SecAPI
+# https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+
+title = "SecAPI Gitleaks Config"
+
+[extend]
+useDefault = true
+
+# Allowlist for known false positives
+[allowlist]
+description = "Global allowlist for false positives"
+paths = [
+    '''gitleaks\.toml''',
+    '''\.pre-commit-config\.yaml''',
+]
+
+# Allow specific patterns in documentation
+[[allowlist.strings]]
+    description = "Allow placeholder API keys in documentation"
+    regex = '''YOUR_API_KEY|invalid_key|test_key|placeholder|EXAMPLE'''
+    path = '''\.(md|html|txt)$'''
