@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 from uuid import UUID, uuid4
 
+import sqlalchemy as sa
 from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -49,11 +50,11 @@ class Scan(Base, TimestampMixin):
     status: Mapped[Literal["pending", "running", "completed", "failed"]] = mapped_column(
         String(50), default="pending", nullable=False
     )
-    input_data: Mapped[dict | None] = mapped_column(Text, nullable=True)
-    results: Mapped[dict | None] = mapped_column(Text, nullable=True)
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    input_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    results: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="scans")
@@ -92,3 +93,18 @@ class RateLimit(Base):
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="rate_limits")
+
+
+class ApiKeyResetToken(Base):
+    """API key reset token model."""
+
+    __tablename__ = "api_key_reset_tokens"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    email: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used: Mapped[bool] = mapped_column(default=False, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+    )

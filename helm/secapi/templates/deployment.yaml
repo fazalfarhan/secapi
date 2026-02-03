@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "secapi.fullname" . }}-api
+  namespace: {{ include "secapi.namespace" . }}
   labels:
     {{- include "secapi.api.labels" . | nindent 4 }}
 spec:
@@ -40,8 +41,14 @@ spec:
               containerPort: 8000
               protocol: TCP
           env:
+            - name: TRIVY_CACHE_DIR
+              value: /tmp/trivy-cache
             - name: ENVIRONMENT
-              value: {{ .Values.environment | quote }}
+              value: {{ ternary "production" "development" .Values.production | quote }}
+            - name: RESET_METHOD
+              value: {{ ternary "email" "console" .Values.production | quote }}
+            - name: RESET_TOKEN_EXPIRY_MINUTES
+              value: {{ .Values.resetTokenExpiryMinutes | quote }}
             - name: API_V1_STR
               value: {{ .Values.app.apiV1Str | quote }}
             - name: ALLOWED_ORIGINS
@@ -95,6 +102,38 @@ spec:
             - name: CELERY_RESULT_BACKEND
               value: {{ include "secapi.celeryResultBackend" . }}
             {{- end }}
+            {{- if .Values.production }}
+            - name: SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | default (include "secapi.fullname" .) | printf "%s-secret" }}
+                  key: smtp-host
+            - name: SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | default (include "secapi.fullname" .) | printf "%s-secret" }}
+                  key: smtp-port
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | default (include "secapi.fullname" .) | printf "%s-secret" }}
+                  key: smtp-user
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | default (include "secapi.fullname" .) | printf "%s-secret" }}
+                  key: smtp-password
+            - name: SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | default (include "secapi.fullname" .) | printf "%s-secret" }}
+                  key: smtp-from
+            - name: SMTP_USE_TLS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | default (include "secapi.fullname" .) | printf "%s-secret" }}
+                  key: smtp-use-tls
+            {{- end }}
             {{- with .Values.global.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -121,15 +160,19 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: trivy-cache
+              mountPath: /tmp/trivy-cache
             {{- if .Values.scanCache.persistence.enabled }}
-            - name: scan-cache
-              mountPath: /root/.cache/trivy
+            - name: scan-cache-pvc
+              mountPath: /var/lib/secapi/cache
             {{- end }}
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: trivy-cache
+          emptyDir: {}
         {{- if .Values.scanCache.persistence.enabled }}
-        - name: scan-cache
+        - name: scan-cache-pvc
           persistentVolumeClaim:
             claimName: {{ include "secapi.fullname" . }}-scan-cache
         {{- end }}

@@ -3,6 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "secapi.fullname" . }}-postgres
+  namespace: {{ include "secapi.namespace" . }}
   labels:
     {{- include "secapi.postgres.labels" . | nindent 4 }}
 spec:
@@ -22,6 +23,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "secapi.fullname" . }}-redis
+  namespace: {{ include "secapi.namespace" . }}
   labels:
     {{- include "secapi.redis.labels" . | nindent 4 }}
 spec:
@@ -41,6 +43,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "secapi.fullname" . }}-scan-cache
+  namespace: {{ include "secapi.namespace" . }}
   labels:
     {{- include "secapi.labels" . | nindent 4 }}
     app.kubernetes.io/component: scan-cache
@@ -61,6 +64,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "secapi.fullname" . }}-scan-targets
+  namespace: {{ include "secapi.namespace" . }}
   labels:
     {{- include "secapi.labels" . | nindent 4 }}
     app.kubernetes.io/component: scan-targets

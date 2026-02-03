@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "secapi.fullname" . }}-worker
+  namespace: {{ include "secapi.namespace" . }}
   labels:
     {{- include "secapi.worker.labels" . | nindent 4 }}
 spec:
@@ -41,8 +42,10 @@ spec:
             - --concurrency={{ .Values.celeryWorker.concurrency }}
             {{- end }}
           env:
+            - name: TRIVY_CACHE_DIR
+              value: /tmp/trivy-cache
             - name: ENVIRONMENT
-              value: {{ .Values.environment | quote }}
+              value: {{ ternary "production" "development" .Values.production | quote }}
             {{- if .Values.existingSecret }}
             - name: DATABASE_URL
               valueFrom:
@@ -75,26 +78,30 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
-            {{- if .Values.scanCache.persistence.enabled }}
-            - name: scan-cache
-              mountPath: /root/.cache/trivy
-            {{- end }}
+            - name: trivy-cache
+              mountPath: /tmp/trivy-cache
             {{- if .Values.scanTargets.persistence.enabled }}
             - name: scan-targets
               mountPath: /scan
             {{- end }}
+            {{- if .Values.scanCache.persistence.enabled }}
+            - name: scan-cache-pvc
+              mountPath: /var/lib/secapi/cache
+            {{- end }}
       volumes:
         - name: tmp
           emptyDir: {}
-        {{- if .Values.scanCache.persistence.enabled }}
-        - name: scan-cache
-          persistentVolumeClaim:
-            claimName: {{ include "secapi.fullname" . }}-scan-cache
-        {{- end }}
+        - name: trivy-cache
+          emptyDir: {}
         {{- if .Values.scanTargets.persistence.enabled }}
         - name: scan-targets
           persistentVolumeClaim:
             claimName: {{ include "secapi.fullname" . }}-scan-targets
+        {{- end }}
+        {{- if .Values.scanCache.persistence.enabled }}
+        - name: scan-cache-pvc
+          persistentVolumeClaim:
+            claimName: {{ include "secapi.fullname" . }}-scan-cache
         {{- end }}
       {{- with .Values.celeryWorker.nodeSelector }}
       nodeSelector:

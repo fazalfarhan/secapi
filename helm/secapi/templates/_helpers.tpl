@@ -138,3 +138,14 @@ imagePullSecrets:
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Namespace to use for resources
+*/}}
+{{- define "secapi.namespace" -}}
+{{- if .Values.namespace.name }}
+{{- .Values.namespace.name }}
+{{- else }}
+{{- .Release.Namespace | default "secapi" }}
+{{- end }}
+{{- end }}
